@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
@@ -10,12 +10,37 @@ if (started) {
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 350,
+    height: 300,
+    // show: false,
+    frame: false,
+    resizable: false,
+    transparent: true,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
+  let isOverlayOn = true;
+
+  let toggleOverlayHotkey = 'Control+Shift+O'; // Default hotkey
+  if (process.platform === 'darwin') {
+    toggleOverlayHotkey = 'Command+Shift+O'; // Use Command key on macOS
+  }
+
+
+  globalShortcut.register(toggleOverlayHotkey, () => {
+    isOverlayOn = !isOverlayOn;
+    //ignore mouse events when the overlay is on and make the overlay click-through
+    mainWindow.setIgnoreMouseEvents(isOverlayOn, { forward: true });
+
+    // send event to renderer process to toggle the overlay visibility
+    mainWindow.webContents.send('toggle-overlay', isOverlayOn);
+
+  });
+
+  mainWindow.setAlwaysOnTop(true, 'floating');
+  // mainWindow.setIgnoreMouseEvents(true);
 
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -27,7 +52,7 @@ const createWindow = () => {
   }
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
 };
 
 // This method will be called when Electron has finished
@@ -54,3 +79,16 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+ipcMain.on('minimize-window', (event) => {
+  const window = BrowserWindow.fromWebContents(event.sender);
+  if (window) {
+    window.minimize();
+  }
+});
+
+ipcMain.on('close-window', (event) => {
+  const window = BrowserWindow.fromWebContents(event.sender);
+  if (window) {
+    window.close();
+  }
+});

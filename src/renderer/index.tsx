@@ -30,10 +30,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css'; // Global styles
 import App from '@/renderer/App'; // Import the App component
+import React from 'react'; // Import React
 
 const container = document.getElementById('root');
 
 if (container) {
+  console.log('React version:', React.version);
+  // window.react1 = React; // Check this in the DevTools console later
   const root = createRoot(container);
   root.render(
     <StrictMode>
